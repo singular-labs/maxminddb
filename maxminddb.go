@@ -128,6 +128,27 @@ func write_uint32(out io.Writer, x uint32) {
 	}
 }
 
+func write_uint64(out io.Writer, x uint64) {
+	switch {
+	case x <= 0xFF:
+		out.Write([]byte{0x01, 0x02, byte(x & 0xFF)})
+	case x <= 0xFFFF:
+		out.Write([]byte{0x02, 0x02, byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	case x <= 0xFFFFFF:
+		out.Write([]byte{0x03, 0x02, byte((x & 0xFF0000) >> 16), byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	case x <= 0xFFFFFFFF:
+		out.Write([]byte{0x04, 0x02, byte((x & 0xFF000000) >> 24), byte((x & 0xFF0000) >> 16), byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	case x <= 0xFFFFFFFFFF:
+		out.Write([]byte{0x05, 0x02, byte((x & 0xFF00000000) >> 32), byte((x & 0xFF000000) >> 24), byte((x & 0xFF0000) >> 16), byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	case x <= 0xFFFFFFFFFFFF:
+		out.Write([]byte{0x06, 0x02, byte((x & 0xFF0000000000) >> 40), byte((x & 0xFF00000000) >> 32), byte((x & 0xFF000000) >> 24), byte((x & 0xFF0000) >> 16), byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	case x <= 0xFFFFFFFFFFFFFF:
+		out.Write([]byte{0x07, 0x02, byte((x & 0xFF000000000000) >> 48), byte((x & 0xFF0000000000) >> 40), byte((x & 0xFF00000000) >> 32), byte((x & 0xFF000000) >> 24), byte((x & 0xFF0000) >> 16), byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	default:
+		out.Write([]byte{0x08, 0x02, byte((x & 0xFF00000000000000) >> 56), byte((x & 0xFF000000000000) >> 48), byte((x & 0xFF0000000000) >> 40), byte((x & 0xFF00000000) >> 32), byte((x & 0xFF000000) >> 24), byte((x & 0xFF0000) >> 16), byte((x & 0xFF00) >> 8), byte(x & 0xFF)})
+	}
+}
+
 func write_float32(out io.Writer, x float32) {
 	y := math.Float32bits(x)
 	out.Write([]byte{0x04, 0x08, byte((y & 0xFF000000) >> 24), byte((y & 0xFF0000) >> 16), byte((y & 0xFF00) >> 8), byte(y & 0xFF)})
@@ -357,10 +378,12 @@ func Dump(fn string, record_size int) {
 	write_utf8string(out, "binary_format_minor_version")
 	write_uint16(out, 2)
 	write_utf8string(out, "build_epoch")
-	write_uint32(out, uint32(time.Now().Unix()&0xFFFFFFFF))
+	write_uint64(out, uint64(time.Now().Unix()))
 	write_utf8string(out, "database_type")
 	write_utf8string(out, "GeoIP2-City")
 	write_utf8string(out, "description")
+	write_map(out, 1)
+	write_utf8string(out, "en")
 	write_utf8string(out, "GeoIP2 City database")
 	write_utf8string(out, "ip_version")
 	write_uint16(out, 4)
