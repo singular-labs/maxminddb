@@ -221,6 +221,7 @@ func intern_region(name string) int {
 		name_offset := intern_string(name)
 		offset = data.Len()
 		terms["subdivisions\x00"+name] = offset
+		write_array(data, 1)
 		write_map(data, 1)
 		write_ptr(data, names_key_offset)
 		write_map(data, 1)
