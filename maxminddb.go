@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"math/bits"
 	"net"
 	"os"
 	"time"
@@ -55,6 +56,31 @@ func new_node() int {
 	// < 0: geonode id (1-based) * -1
 	nodes = append(nodes, Node{Bit0: 0, Bit1: 0})
 	return int(node_seq)
+}
+
+func range_to_subnets(a uint32, b uint32) []net.IPNet {
+	out := make([]net.IPNet, 0)
+	for a <= b {
+		subnet := uint(bits.TrailingZeros32(a))
+		for a+(uint32(1)<<subnet)-1 > b {
+			subnet--
+		}
+		out = append(out, net.IPNet{Uint32_to_IP(a), net.CIDRMask(int(32-subnet), 32)})
+		new_a := a + (uint32(1) << subnet)
+		// wrap-around
+		if new_a < a {
+			break
+		}
+		a = new_a
+	}
+
+	return out
+}
+
+func Push_Range(begin net.IP, end net.IP, geo GeoName) {
+	for _, subnet := range range_to_subnets(IP_to_uint32(begin), IP_to_uint32(end)) {
+		Push(subnet, geo)
+	}
 }
 
 func Push(subnet net.IPNet, geo GeoName) {
